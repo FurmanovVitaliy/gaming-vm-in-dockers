@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  pulse-audio:
+    image: arch:pulseaudio
+    network_mode: "host"
+    environment:
+      - UNAME=${USERNAME}
+    volumes:
+      - ${LOCAL_STARAGE}/${USERNAME}-home:/home/${USERNAME}
+
+  ffmpeg-audio:
+    image: arch:ffmpeg-audio
+    depends_on:
+      - pulse-audio
+    network_mode: "host"
+    environment:
+      - UNAME=${USERNAME}
+      - PULSE_SERVER_TCP_PORT=${PULSE_SERVER}
+      - HOST_IP=${HOST_IP}
+      - AUDIO_PORT=${AUDIO_PORT}
+      - PKT_SIZE=${AUDIO_PKT_SIZE}
+    volumes:
+      - ${LOCAL_STARAGE}/${USERNAME}-home:/home/${USERNAME}
+
+  ffmpeg-video:
+    image: arch:ffmpeg-video
+    privileged: true
+    network_mode: "host"
+    environment:
+      - UNAME=${USERNAME}
+      - HOST_IP=${HOST_IP}
+      - VIDEO_PORT=${VIDEO_PORT}
+      - PKT_SIZE=${VIDEO_PKT_SIZE}
+      - PLANE_ID=${PLANE_ID}
+      - VAAPI_DEVICE=${VAAPI_DEVICE}
+      - RESOLUTION=${RESOLUTION}
+      - PIX_FORMAT=${PIX_FORMAT}
+      - THREADS=${THREADS}
+      - FILTER_THREADS=${FILTER_THREADS}
+      - THREAD_QUEUE_SIZE=${THREAD_QUEUE_SIZE}
+      - FPS=${FPS}
+      - GOP=${GOP}
+      - CODEC=${CODEC}
+      - PRESET=${PRESET}
+      - TUNE=${TUNE}
+      - PROFILE=${PROFILE}
+      - BITRATE=${BITRATE}
+      - BUF_SIZE=${BUF_SIZE}
+    volumes:
+      - ${LOCAL_STARAGE}/${USERNAME}-home:/home/${USERNAME}
+    devices:
+      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/renderD128:/dev/dri/renderD128
+
+
+  port-protone:
+    image: arch:portprotone
+    privileged: true
+    network_mode: "host"
+    depends_on:
+      - ffmpeg-audio
+      - ffmpeg-video
+    environment:
+      - UNAME=${USERNAME}
+      - EXECUTIONFILE=${EXECUTIONFILE}
+      - DISPLAY=${MONITOR}
+      - LOCAL_STARAGE=${LOCAL_STARAGE}
+      - PULSE_SERVER_TCP_PORT=${PULSE_SERVER}
+    volumes:
+      - ${LOCAL_STARAGE}/${USERNAME}-home:/home/${USERNAME}
+      - ${LOCAL_GAME_PATH}:/home/${USERNAME}/game
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/input/event${DEVICE}:/dev/input/event99
